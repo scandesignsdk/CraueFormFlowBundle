@@ -27,6 +27,7 @@ class SerializableFile {
 
 	protected $clientOriginalName;
 	protected $clientMimeType;
+	protected $clientSize;
 
 	/**
 	 * @param mixed $file An object meant to be serialized.
@@ -42,6 +43,7 @@ class SerializableFile {
 
 		$this->clientOriginalName = $file->getClientOriginalName();
 		$this->clientMimeType = $file->getClientMimeType();
+		$this->clientSize = $file->getClientSize();
 	}
 
 	/**
@@ -59,7 +61,7 @@ class SerializableFile {
 
 		TempFileUtil::addTempFile($tempFile);
 
-		return new UploadedFile($tempFile, $this->clientOriginalName, $this->clientMimeType, null, null, true);
+		return new UploadedFile($tempFile, $this->clientOriginalName, $this->clientMimeType, $this->clientSize, null, true);
 	}
 
 	/**

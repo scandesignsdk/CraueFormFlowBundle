@@ -2,18 +2,21 @@
 
 {%- if flow.getStepLabels() is not empty -%}
 	<ol class="craue_formflow_steplist">
+        {% set i = 1 %}
 		{% for stepLabel in flow.getStepLabels() %}
 			<li{{ block('craue_flow_stepList_class') }}>
 				{%- if craue_isStepLinkable(flow, loop.index) -%}
-					<a href="{{ path(app.request.attributes.get('_route'), app.request.query.all
+					<!-- <a href="{{ path(app.request.attributes.get('_route'), app.request.query.all
 							| merge(app.request.attributes.get('_route_params'))
 							| craue_addDynamicStepNavigationParameters(flow, loop.index)) }}">
 						{{- block('craue_flow_stepLabel') -}}
-					</a>
+					</a> -->
+					<button class="btn" name="flow_configurator_transition" value="{{ i }}" formnovalidate="formnovalidate">{{- block('craue_flow_stepLabel') -}}</button>
 				{%- else -%}
 					{{ block('craue_flow_stepLabel') }}
 				{%- endif -%}
 			</li>
+			{% set i = i + 1 %}
 		{% endfor %}
 	</ol>
 {%- endif -%}

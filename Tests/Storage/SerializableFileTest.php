@@ -33,15 +33,17 @@ class SerializableFileTest extends TestCase {
 		$document = __DIR__ . self::DOCUMENT;
 		$originalName = basename($document);
 		$mimeType = 'application/octet-stream';
+		$size = strlen(file_get_contents($document));
 
-		$serializableFile = new SerializableFile(new UploadedFile($document, $originalName, $mimeType, null, null, true));
+		$serializableFile = new SerializableFile(new UploadedFile($document, $originalName, $mimeType, $size, null, true));
 		$processedUploadedFile = $serializableFile->getAsFile();
 
 		$this->assertEquals(realpath(sys_get_temp_dir()), realpath($processedUploadedFile->getPath()));
 		$this->assertEquals($originalName, $processedUploadedFile->getClientOriginalName());
 		$this->assertEquals($mimeType, $processedUploadedFile->getClientMimeType());
 		$this->assertEquals('text/plain', $processedUploadedFile->getMimeType());
-		$this->assertEquals(strlen(file_get_contents($document)), $processedUploadedFile->getSize());
+		$this->assertEquals($size, $processedUploadedFile->getClientSize());
+		$this->assertEquals($size, $processedUploadedFile->getSize());
 	}
 
 	public function testSerialization_minimalData() {
@@ -54,6 +56,7 @@ class SerializableFileTest extends TestCase {
 		$this->assertEquals($originalName, $processedUploadedFile->getClientOriginalName());
 		$this->assertEquals('application/octet-stream', $processedUploadedFile->getClientMimeType());
 		$this->assertEquals('text/plain', $processedUploadedFile->getMimeType());
+		$this->assertEquals(0, $processedUploadedFile->getClientSize());
 		$this->assertEquals(strlen(file_get_contents($document)), $processedUploadedFile->getSize());
 	}
 

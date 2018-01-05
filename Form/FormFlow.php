@@ -180,9 +180,10 @@ abstract class FormFlow implements FormFlowInterface {
 	/**
 	 * {@inheritDoc}
 	 */
-	public function setRequestStack(RequestStack $requestStack) {
-		$this->requestStack = $requestStack;
-	}
+	public function setRequestStack(RequestStack $requestStack)
+    {
+        $this->requestStack = $requestStack;
+    }
 
 	/**
 	 * @return Request
@@ -513,19 +514,26 @@ abstract class FormFlow implements FormFlowInterface {
 		if ($this->isStepSkipped($stepNumber)) {
 			return true;
 		}
-
-		return array_key_exists($stepNumber, $this->retrieveStepData());
+        error_log('Requested step number: ' . $this->getRequestedStepNumber());
+		error_log('Is step ' . $stepNumber . ' done? ' . ($stepNumber < $this->getRequestedStepNumber()));
+		return $stepNumber < $this->getRequestedStepNumber();
+		//return array_key_exists($stepNumber, $this->retrieveStepData());
 	}
 
 	public function getRequestedTransition() {
 		if (empty($this->transition)) {
 			$this->transition = strtolower($this->getRequest()->request->get($this->getFormTransitionKey()));
 		}
-
 		return $this->transition;
 	}
 
-	protected function getRequestedStepNumber() {
+	private function getRequestedTransitionLink() {
+	    return is_numeric($this->getRequestedTransition())
+            ? intval($this->getRequestedTransition())
+            : null;
+    }
+
+	public function getRequestedStepNumber() {
 		$defaultStepNumber = 1;
 
 		$request = $this->getRequest();
@@ -533,15 +541,36 @@ abstract class FormFlow implements FormFlowInterface {
 		switch ($request->getMethod()) {
 			case 'PUT':
 			case 'POST':
-				return intval($request->request->get($this->getFormStepKey(), $defaultStepNumber));
+			    error_log('requested transition: ' . $this->getRequestedTransition());
+			    $t = $this->getRequestedTransitionLink();
+			    if ($t != null)
+			        return $t;
+			    $n = intval($request->request->get($this->getFormStepKey(), $defaultStepNumber));
+			    return $this->getRequestedTransition() === self::TRANSITION_BACK
+                    ? $n - 1
+                    : ($this->getRequestedTransition() == self::TRANSITION_RESET ? 1 : $n);
 			case 'GET':
-				return $this->allowDynamicStepNavigation || $this->allowRedirectAfterSubmit ?
-						intval($request->get($this->dynamicStepNavigationStepParameter, $defaultStepNumber)) :
-						$defaultStepNumber;
+				break;
 		}
 
 		return $defaultStepNumber;
 	}
+
+    public function getPreviousStepNumber() {
+        $defaultStepNumber = 1;
+
+        $request = $this->getRequest();
+
+        switch ($request->getMethod()) {
+            case 'PUT':
+            case 'POST':
+                return intval($request->get($this->getFormStepKey(), $defaultStepNumber));
+            case 'GET':
+                break;
+        }
+
+        return $defaultStepNumber;
+    }
 
 	/**
 	 * Finds out which step is the current one.
@@ -549,10 +578,6 @@ abstract class FormFlow implements FormFlowInterface {
 	 */
 	protected function determineCurrentStepNumber() {
 		$requestedStepNumber = $this->getRequestedStepNumber();
-
-		if ($this->getRequestedTransition() === self::TRANSITION_BACK) {
-			--$requestedStepNumber;
-		}
 
 		$requestedStepNumber = $this->ensureStepNumberRange($requestedStepNumber);
 		$requestedStepNumber = $this->refineCurrentStepNumber($requestedStepNumber);
@@ -603,7 +628,6 @@ abstract class FormFlow implements FormFlowInterface {
 			$event = new PreBindEvent($this);
 			$this->eventDispatcher->dispatch(FormFlowEvents::PRE_BIND, $event);
 		}
-
 		$this->formData = $formData;
 
 		$this->bindFlow();
@@ -684,6 +708,7 @@ abstract class FormFlow implements FormFlowInterface {
 			}
 		}
 
+        $this->saveCurrentStepDataFromForm();
 		$this->currentStepNumber = $requestedStepNumber;
 
 		if (!$this->allowDynamicStepNavigation && $this->getRequestedTransition() === self::TRANSITION_BACK) {
@@ -715,6 +740,34 @@ abstract class FormFlow implements FormFlowInterface {
 
 		$this->saveStepData($stepData);
 	}
+
+	private function saveCurrentStepDataFromForm() {
+	    if ($this->getPreviousStepNumber() === null) {
+	        return;
+        }
+        error_log('Save data for step: ' . $this->getPreviousStepNumber());
+        $stepData = $this->retrieveStepData();
+
+        $request = $this->getRequest();
+        $t = $this->getStep($this->getPreviousStepNumber())->getFormType();
+        error_log('new object type is ' . $t);
+        $formName = $t::getName();
+        error_log('form name is: ' . $formName);
+
+        $currentStepData = $request->get($formName, array());
+        if ($this->handleFileUploads) {
+            $currentStepData = array_merge_recursive($currentStepData, $request->files->get($formName, array()));
+        }
+
+        error_log('step data is listed here:');
+        foreach ($currentStepData as $k => $v) {
+            error_log('STEP DATA: ' . $k . ' => ' . $v);
+        }
+
+        $stepData[$this->getPreviousStepNumber()] = $currentStepData;
+
+        $this->saveStepData($stepData);
+    }
 
 	/**
 	 * Invalidates data for steps >= $fromStepNumber.
@@ -962,7 +1015,6 @@ abstract class FormFlow implements FormFlowInterface {
 	protected function createFormForStep($stepNumber, array $options = array()) {
 		$formType = $this->getStep($stepNumber)->getFormType();
 		$options = $this->getFormOptions($stepNumber, $options);
-
 		if ($formType === null) {
 			$useFqcn = method_exists('Symfony\Component\Form\AbstractType', 'getBlockPrefix');
 			$formType = $useFqcn ? 'Symfony\Component\Form\Extension\Core\Type\FormType' : 'form';
