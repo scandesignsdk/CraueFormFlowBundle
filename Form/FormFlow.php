@@ -664,53 +664,59 @@ abstract class FormFlow implements FormFlowInterface {
 		return $instanceId;
 	}
 
-	protected function bindFlow() {
-		$request = $this->getRequest();
-		$reset = false;
+	protected function bindFlow()
+    {
+        $request = $this->getRequest();
+        $reset = false;
 
-		if (!$this->allowDynamicStepNavigation && !$this->allowRedirectAfterSubmit && $request->isMethod('GET')) {
-			$reset = true;
-		}
+        if (!$this->allowDynamicStepNavigation && !$this->allowRedirectAfterSubmit && $request->isMethod('GET')) {
+            $reset = true;
+        }
 
-		if ($this->getRequestedTransition() === self::TRANSITION_RESET) {
-			$reset = true;
-		}
+        if ($this->getRequestedTransition() === self::TRANSITION_RESET) {
+            $reset = true;
+        }
 
-		if (in_array($request->getMethod(), array('POST', 'PUT')) && $request->get($this->getFormStepKey()) !== null && !$this->dataManager->exists($this)) {
-			// flow is expired, drop posted data and reset
-			$request->request->replace();
-			$reset = true;
-			$this->expired = true;
+        if (in_array($request->getMethod(), array('POST', 'PUT')) && $request->get($this->getFormStepKey()) !== null && !$this->dataManager->exists($this)) {
+            // flow is expired, drop posted data and reset
+            $request->request->replace();
+            $reset = true;
+            $this->expired = true;
 
-			// Regenerate instance ID so resubmits of the form will continue to give error. Otherwise, submitting
-			// the new form, then backing up to the old form won't give the error.
-			$this->setInstanceId($this->determineInstanceId());
-		}
+            // Regenerate instance ID so resubmits of the form will continue to give error. Otherwise, submitting
+            // the new form, then backing up to the old form won't give the error.
+            $this->setInstanceId($this->determineInstanceId());
+        }
 
-		if (!$reset) {
-			$this->applyDataFromSavedSteps();
-		}
+        if (!$reset) {
+            $this->applyDataFromSavedSteps();
+        }
 
-		$requestedStepNumber = $this->determineCurrentStepNumber();
+        $requestedStepNumber = $this->determineCurrentStepNumber();
 
-		if ($reset) {
-			$this->reset();
-			return;
-		}
+        if ($reset) {
+            $this->reset();
+            return;
+        }
 
-		// ensure that the requested step fits the current progress
-		if ($requestedStepNumber > $this->getFirstStepNumber()) {
-			for ($step = $this->getFirstStepNumber(); $step < $requestedStepNumber; ++$step) {
-				if (!$this->isStepDone($step)) {
-					$this->reset();
-					return;
-				}
-			}
-		}
+        // ensure that the requested step fits the current progress
+        if ($requestedStepNumber > $this->getFirstStepNumber()) {
+            for ($step = $this->getFirstStepNumber(); $step < $requestedStepNumber; ++$step) {
+                if (!$this->isStepDone($step)) {
+                    $this->reset();
+                    return;
+                }
+            }
+        }
 
         $this->saveCurrentStepDataFromForm();
-		$this->currentStepNumber = $requestedStepNumber;
+        $this->currentStepNumber = $requestedStepNumber;
 
+        if (array_key_exists($this->currentStepNumber, $this->retrieveStepData())) {
+            foreach ($this->retrieveStepData()[$this->currentStepNumber] as $k => $v) {
+                error_log('SAVED STEP DATA: ' . $k . ' => ' . $v);
+            }
+        }
 		if (!$this->allowDynamicStepNavigation && $this->getRequestedTransition() === self::TRANSITION_BACK) {
 			/*
 			 * Don't invalidate data for the current step to properly show the filled out form for that step after
@@ -720,12 +726,6 @@ abstract class FormFlow implements FormFlowInterface {
 			$this->invalidateStepData($this->currentStepNumber + 1);
 		}
 	}
-
-	public function setStepData($stepNumber, $key, $value) {
-        	$stepData = $this->retrieveStepData();
-        	$stepData[$stepNumber][$key] = $value;
-        	$this->saveStepData($stepData);
-    	}
 
 	/**
 	 * {@inheritDoc}
@@ -746,6 +746,12 @@ abstract class FormFlow implements FormFlowInterface {
 
 		$this->saveStepData($stepData);
 	}
+
+	public function setStepData($stepNumber, $key, $value) {
+        $stepData = $this->retrieveStepData();
+        $stepData[$stepNumber][$key] = $value;
+        $this->saveStepData($stepData);
+    }
 
 	private function saveCurrentStepDataFromForm() {
 	    if ($this->getPreviousStepNumber() === null) {
@@ -1055,7 +1061,7 @@ abstract class FormFlow implements FormFlowInterface {
 		return array();
 	}
 
-	protected function retrieveStepData() {
+	public function retrieveStepData() {
 		return $this->dataManager->load($this);
 	}
 
