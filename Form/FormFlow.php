@@ -721,6 +721,12 @@ abstract class FormFlow implements FormFlowInterface {
 		}
 	}
 
+	public function setStepData($stepNumber, $key, $value) {
+        	$stepData = $this->retrieveStepData();
+        	$stepData[$stepNumber][$key] = $value;
+        	$this->saveStepData($stepData);
+    	}
+
 	/**
 	 * {@inheritDoc}
 	 */
