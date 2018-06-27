@@ -38,6 +38,10 @@ class Step implements StepInterface {
 	 */
 	private $skipFunction = null;
 
+	private $isSuperStep = false;
+
+	private $isEnteredStep = false;
+
 	/**
 	 * @var bool|null Is only null if not yet evaluated.
 	 */
@@ -209,4 +213,19 @@ class Step implements StepInterface {
 		return $this->skipped === true;
 	}
 
+	public function isSuper() {
+	    return $this->isSuperStep;
+    }
+
+    public function setSuper($b) {
+	    $this->isSuperStep = $b;
+    }
+
+    public function isEntered() {
+	    return $this->isEnteredStep;
+    }
+
+    public function setEntered($b) {
+	    $this->isEnteredStep = $b;
+    }
 }

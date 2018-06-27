@@ -60,7 +60,7 @@ abstract class FormFlow implements FormFlowInterface {
 	/**
 	 * @var bool
 	 */
-	protected $allowDynamicStepNavigation = false;
+	protected $allowDynamicStepNavigation = true;
 
 	/**
 	 * @var bool If file uploads should be handled by serializing them into the storage.
@@ -424,6 +424,22 @@ abstract class FormFlow implements FormFlowInterface {
 		return $this->getStep($stepNumber)->isSkipped();
 	}
 
+	public function isStepSuper($stepNumber) {
+	    return $this->getStep($stepNumber)->isSuper();
+    }
+
+    public function setStepSuper($stepNumber, $b) {
+        return $this->getStep($stepNumber)->setSuper($b);
+    }
+
+    public function isStepEntered($stepNumber) {
+        return $this->getStep($stepNumber)->isEntered();
+    }
+
+    public function setStepEntered($stepNumber, $b) {
+        return $this->getStep($stepNumber)->setEntered($b);
+    }
+
 	/**
 	 * @param int $stepNumber Assumed step to which skipped steps shall be applied to.
 	 * @param int $direction Either 1 (to skip forwards) or -1 (to skip backwards).
@@ -514,8 +530,8 @@ abstract class FormFlow implements FormFlowInterface {
 		if ($this->isStepSkipped($stepNumber)) {
 			return true;
 		}
-        error_log('Requested step number: ' . $this->getRequestedStepNumber());
-		error_log('Is step ' . $stepNumber . ' done? ' . ($stepNumber < $this->getRequestedStepNumber()));
+        //error_log('Requested step number: ' . $this->getRequestedStepNumber());
+		//error_log('Is step ' . $stepNumber . ' done? ' . ($stepNumber < $this->getRequestedStepNumber()));
 		return $stepNumber < $this->getRequestedStepNumber();
 		//return array_key_exists($stepNumber, $this->retrieveStepData());
 	}
@@ -541,7 +557,7 @@ abstract class FormFlow implements FormFlowInterface {
 		switch ($request->getMethod()) {
 			case 'PUT':
 			case 'POST':
-			    error_log('requested transition: ' . $this->getRequestedTransition());
+			    //error_log('requested transition: ' . $this->getRequestedTransition());
 			    $t = $this->getRequestedTransitionLink();
 			    if ($t != null)
 			        return $t;
@@ -713,9 +729,10 @@ abstract class FormFlow implements FormFlowInterface {
         $this->currentStepNumber = $requestedStepNumber;
 
         if (array_key_exists($this->currentStepNumber, $this->retrieveStepData())) {
+            /*
             foreach ($this->retrieveStepData()[$this->currentStepNumber] as $k => $v) {
                 error_log('SAVED STEP DATA: ' . $k . ' => ' . $v);
-            }
+            }*/
         }
 		if (!$this->allowDynamicStepNavigation && $this->getRequestedTransition() === self::TRANSITION_BACK) {
 			/*

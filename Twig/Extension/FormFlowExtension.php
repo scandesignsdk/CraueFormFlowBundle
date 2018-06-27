@@ -97,10 +97,10 @@ class FormFlowExtension extends \Twig_Extension {
 		$lastStepLinkable = $lastStepConsecutivelyDone + 1;
 
 		if ($stepNumber <= $lastStepLinkable) {
-			return true;
+			return $flow->isStepEntered($stepNumber);
 		}
 
-		return false;
+		return $flow->isStepSuper($stepNumber);
 	}
 
 	// methods for BC with third-party templates (e.g. MopaBootstrapBundle)
