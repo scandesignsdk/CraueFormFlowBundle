@@ -12,10 +12,13 @@
 							| craue_addDynamicStepNavigationParameters(flow, loop.index)) }}">
 						{{- block('craue_flow_stepLabel') -}}
 					</a> -->
-					<button class="btn" name="flow_configurator_transition" value="{{ i }}" formnovalidate="formnovalidate">{{- block('craue_flow_stepLabel') -}}</button>
-				{%- else -%}
-					{{ block('craue_flow_stepLabel') }}
+                    <button class="btn availableStepButtons" name="flow_configurator_transition" value="{{ i }}" formnovalidate="formnovalidate">{{ i }}</button>
+                {%- elseif flow.getCurrentStepNumber == i -%}
+                    <button id="currentStepButton" class="btn availableStepButtons" name="flow_configurator_transition" value="{{ i }}" formnovalidate="formnovalidate">{{ i }}</button>
+                {%- else -%}
+                    <input type="button" class="disabledButton" name="flow_configurator_transition" value="{{ i }}" formnovalidate="formnovalidate" disabled><br />
 				{%- endif -%}
+                {{ block('craue_flow_stepLabel') }}
 			</div>
 			{# </li> #}
 			{% set i = i + 1 %}
